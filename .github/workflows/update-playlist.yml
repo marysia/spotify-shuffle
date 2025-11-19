@@ -33,19 +33,24 @@ jobs:
       with:
         path: |
           liked_songs_cache.json
-          .cache-*
+          .cache*
         key: spotify-cache-${{ runner.os }}
         restore-keys: |
           spotify-cache-${{ runner.os }}
     
     - name: Restore cache from secret (if first run)
-      if: steps.spotify-cache.outputs.cache-hit != 'true' && secrets.SPOTIFY_CACHE_BASE64 != ''
+      if: steps.spotify-cache.outputs.cache-hit != 'true'
       run: |
-        echo "Cache not found. Restoring from secret..."
-        # Decode the base64 cache file
-        # The cache file will be created with a name that spotipy recognizes (.cache-*)
-        echo "${{ secrets.SPOTIFY_CACHE_BASE64 }}" | base64 -d > .cache-github-actions || exit 1
-        echo "Cache restored from secret"
+        if [ -n "${{ secrets.SPOTIFY_CACHE_BASE64 }}" ]; then
+          echo "Cache not found. Restoring from secret..."
+          # Decode the base64 cache file
+          # The cache file will be created with a name that spotipy recognizes (.cache-*)
+          echo "${{ secrets.SPOTIFY_CACHE_BASE64 }}" | base64 -d > .cache-github-actions || exit 1
+          echo "Cache restored from secret"
+        else
+          echo "No SPOTIFY_CACHE_BASE64 secret found. This is expected if you haven't set it up yet."
+          echo "The workflow will attempt to authenticate, but may fail on first run."
+        fi
     
     - name: Install dependencies
       run: |
@@ -59,7 +64,7 @@ jobs:
         SPOTIPY_REDIRECT_URI: ${{ secrets.SPOTIPY_REDIRECT_URI }}
         TRUE_SHUFFLE_PLAYLIST_ID: ${{ secrets.TRUE_SHUFFLE_PLAYLIST_ID }}
       run: |
-        python update_true_shuffle.py
+        python src/update_true_shuffle.py
     
     - name: Save Spotify cache
       uses: actions/cache@v4
@@ -67,7 +72,7 @@ jobs:
       with:
         path: |
           liked_songs_cache.json
-          .cache-*
+          .cache*
         key: spotify-cache-${{ runner.os }}-${{ github.run_number }}
         restore-keys: |
           spotify-cache-${{ runner.os }}
