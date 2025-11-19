@@ -1,0 +1,74 @@
+name: Update True Shuffle Playlist
+
+on:
+  schedule:
+    # Run daily at 3:00 AM UTC (adjust timezone as needed)
+    - cron: '0 3 * * *'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  update-playlist:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Cache Python dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Restore Spotify cache
+      uses: actions/cache@v4
+      id: spotify-cache
+      with:
+        path: |
+          liked_songs_cache.json
+          .cache-*
+        key: spotify-cache-${{ runner.os }}
+        restore-keys: |
+          spotify-cache-${{ runner.os }}
+    
+    - name: Restore cache from secret (if first run)
+      if: steps.spotify-cache.outputs.cache-hit != 'true' && secrets.SPOTIFY_CACHE_BASE64 != ''
+      run: |
+        echo "Cache not found. Restoring from secret..."
+        # Decode the base64 cache file
+        # The cache file will be created with a name that spotipy recognizes (.cache-*)
+        echo "${{ secrets.SPOTIFY_CACHE_BASE64 }}" | base64 -d > .cache-github-actions || exit 1
+        echo "Cache restored from secret"
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Update True Shuffle playlist
+      env:
+        SPOTIPY_CLIENT_ID: ${{ secrets.SPOTIPY_CLIENT_ID }}
+        SPOTIPY_CLIENT_SECRET: ${{ secrets.SPOTIPY_CLIENT_SECRET }}
+        SPOTIPY_REDIRECT_URI: ${{ secrets.SPOTIPY_REDIRECT_URI }}
+        TRUE_SHUFFLE_PLAYLIST_ID: ${{ secrets.TRUE_SHUFFLE_PLAYLIST_ID }}
+      run: |
+        python update_true_shuffle.py
+    
+    - name: Save Spotify cache
+      uses: actions/cache@v4
+      if: always()  # Save cache even if script fails
+      with:
+        path: |
+          liked_songs_cache.json
+          .cache-*
+        key: spotify-cache-${{ runner.os }}-${{ github.run_number }}
+        restore-keys: |
+          spotify-cache-${{ runner.os }}
+
