@@ -5,7 +5,7 @@ Unfortunately, in large playlists (over 150 songs), the shuffle option prioritiz
 
 I don't want that. 
 
-Through GitHub Actions, this repository is creates a new list of 150 songs **randomly** chosen from my Liked Songs. 
+Through GitHub Actions, this repository updates an existing playlist daily with 150 songs **randomly** chosen from my Liked Songs. 
 
 Want to set this up yourself? Read Setup for this repo to get the correct credentials and run it locally. Read GITHUB_ACTIONS_SETUP.md to see how to set up GitHub Actions to do this automatically.
 
