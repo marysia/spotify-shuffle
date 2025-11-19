@@ -1,0 +1,22 @@
+name: Test Workflow
+
+on:
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Test step
+      run: |
+        echo "Hello from GitHub Actions!"
+        echo "Current time: $(date)"
+        echo "Repository: ${{ github.repository }}"
+        echo "Workflow run: ${{ github.run_number }}"
+
