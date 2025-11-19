@@ -1,6 +1,13 @@
-# Spotify Liked Songs Lister
+# Spotify True Shuffle
 
-A simple Python script to connect to the Spotify API and list all your liked songs.
+## Motivation
+Unfortunately, in large playlists (over 150 songs), the shuffle option prioritizes the songs that Spotify perceives you enjoy the most; this is why you might notice that some songs are repeated while listening on shuffle. 
+
+I don't want that. 
+
+Through GitHub Actions, this repository is creates a new list of 150 songs **randomly** chosen from my Liked Songs. 
+
+Want to set this up yourself? Read Setup for this repo to get the correct credentials and run it locally. Read GITHUB_ACTIONS_SETUP.md to see how to set up GitHub Actions to do this automatically.
 
 ## Setup
 
@@ -47,40 +54,7 @@ A simple Python script to connect to the Spotify API and list all your liked son
 
 Run the script:
 ```bash
-python src/retrieve_liked_songs.py
-```
-
-The first time you run it, you'll be redirected to your browser to authorize the app. After authorization, the script will:
-- Display all your liked songs in the terminal
-- Save them to a file called `liked_songs.txt`
-
-## Features
-
-- Lists all liked songs (handles pagination automatically)
-- Shows track name, artist(s), album, and date added
-- Includes Spotify URLs for each track
-- Saves output to a text file
-
-## Creating Playlists
-
-The script includes a `create_playlist()` function that you can use to create playlists. Example:
-
-```python
-from src.retrieve_liked_songs import create_playlist, get_liked_songs, get_track_uris
-
-# Get your liked songs
-tracks = get_liked_songs()
-
-# Extract track URIs
-track_uris = get_track_uris(tracks)
-
-# Create a playlist with all your liked songs
-playlist = create_playlist(
-    name="My Liked Songs Playlist",
-    description="All my liked songs",
-    public=False,  # Make it private
-    track_uris=track_uris
-)
+python src/update_true_shuffle.py
 ```
 
 ## Notes
