@@ -3,25 +3,12 @@ Script to connect to Spotify API and list all liked songs.
 Also supports creating playlists.
 """
 
-import os
 import json
 from datetime import datetime, timezone
 from pathlib import Path
 import spotipy
-from spotipy.oauth2 import SpotifyOAuth
 
-# Get credentials from environment variables
-# These MUST be set via environment variables (e.g., GitHub Secrets for CI/CD)
-SPOTIPY_CLIENT_ID = os.getenv('SPOTIPY_CLIENT_ID')
-SPOTIPY_CLIENT_SECRET = os.getenv('SPOTIPY_CLIENT_SECRET')
-SPOTIPY_REDIRECT_URI = os.getenv('SPOTIPY_REDIRECT_URI', 'http://127.0.0.1:8888/callback')
-
-# Validate required credentials
-if not SPOTIPY_CLIENT_ID or not SPOTIPY_CLIENT_SECRET:
-    raise ValueError(
-        "Missing required environment variables: SPOTIPY_CLIENT_ID and SPOTIPY_CLIENT_SECRET. "
-        "Please set these via environment variables or GitHub Secrets."
-    )
+from src.utils import get_spotify_client, get_track_uris, create_playlist
 
 # Cache file for liked songs
 LIKED_SONGS_CACHE_FILE = Path("liked_songs_cache.json")
@@ -138,28 +125,6 @@ def get_new_liked_songs_since(sp, since_timestamp=None):
     return new_tracks
 
 
-def get_spotify_client():
-    """
-    Create and return an authenticated Spotify client.
-    
-    Returns:
-        spotipy.Spotify: Authenticated Spotify client
-    """
-    # Set up Spotify OAuth with scopes for reading liked songs and creating playlists
-    # user-library-read: Read access to user's saved tracks
-    # playlist-modify-private: Create and modify private playlists
-    scope = "user-library-read playlist-modify-private"
-    
-    sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
-        client_id=SPOTIPY_CLIENT_ID,
-        client_secret=SPOTIPY_CLIENT_SECRET,
-        redirect_uri=SPOTIPY_REDIRECT_URI,
-        scope=scope
-    ))
-    
-    return sp
-
-
 def get_liked_songs(save_to_disk=True, use_cache=True):
     """
     Connect to Spotify API and retrieve all liked songs.
@@ -273,59 +238,9 @@ def save_to_file(tracks, output_file="liked_songs.txt"):
     print(f"\nTracks saved to {output_path}")
 
 
-def create_playlist(name, description="", public=True, track_uris=None):
-    """
-    Create a new playlist and optionally add tracks to it.
-    
-    Args:
-        name: Name of the playlist
-        description: Description of the playlist (optional)
-        public: Whether the playlist should be public (default: True)
-        track_uris: List of Spotify track URIs to add to the playlist (optional)
-    
-    Returns:
-        dict: Playlist information from Spotify API
-    """
-    sp = get_spotify_client()
-    
-    # Get current user's ID
-    user_id = sp.current_user()['id']
-    
-    # Create the playlist
-    playlist = sp.user_playlist_create(
-        user=user_id,
-        name=name,
-        public=public,
-        description=description
-    )
-    
-    print(f"\nCreated playlist: {name}")
-    print(f"Playlist ID: {playlist['id']}")
-    print(f"Playlist URL: {playlist['external_urls']['spotify']}")
-    
-    # Add tracks if provided
-    if track_uris:
-        # Spotify API allows adding up to 100 tracks at a time
-        for i in range(0, len(track_uris), 100):
-            batch = track_uris[i:i + 100]
-            sp.playlist_add_items(playlist['id'], batch)
-        
-        print(f"Added {len(track_uris)} tracks to the playlist")
-    
-    return playlist
-
-
-def get_track_uris(tracks):
-    """
-    Extract track URIs from a list of track items.
-    
-    Args:
-        tracks: List of track dictionaries from Spotify API
-    
-    Returns:
-        list: List of track URIs
-    """
-    return [item['track']['uri'] for item in tracks]
+# Re-export utility functions for backward compatibility
+# These can be imported from either src.utils or src.retrieve_liked_songs
+__all__ = ['get_liked_songs', 'get_spotify_client', 'get_track_uris', 'create_playlist']
 
 
 if __name__ == "__main__":

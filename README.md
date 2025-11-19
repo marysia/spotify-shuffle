@@ -47,7 +47,7 @@ A simple Python script to connect to the Spotify API and list all your liked son
 
 Run the script:
 ```bash
-python get_liked_songs.py
+python src/retrieve_liked_songs.py
 ```
 
 The first time you run it, you'll be redirected to your browser to authorize the app. After authorization, the script will:
@@ -66,7 +66,7 @@ The first time you run it, you'll be redirected to your browser to authorize the
 The script includes a `create_playlist()` function that you can use to create playlists. Example:
 
 ```python
-from get_liked_songs import create_playlist, get_liked_songs, get_track_uris
+from src.retrieve_liked_songs import create_playlist, get_liked_songs, get_track_uris
 
 # Get your liked songs
 tracks = get_liked_songs()

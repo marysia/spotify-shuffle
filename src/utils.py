@@ -1,21 +1,100 @@
 """
-Script to update the "True Shuffle" playlist with 150 random songs from liked songs.
-This script can be run daily to refresh the playlist.
+Utility functions for Spotify API operations.
 """
 
-import random
-from get_liked_songs import get_spotify_client, get_liked_songs, get_track_uris
-
-# Playlist ID for "True Shuffle" - must be set via environment variable
-# For public repositories, never hardcode IDs or secrets
 import os
-TRUE_SHUFFLE_PLAYLIST_ID = os.getenv('TRUE_SHUFFLE_PLAYLIST_ID')
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
 
-if not TRUE_SHUFFLE_PLAYLIST_ID:
+# Get credentials from environment variables
+# These MUST be set via environment variables (e.g., GitHub Secrets for CI/CD)
+SPOTIPY_CLIENT_ID = os.getenv('SPOTIPY_CLIENT_ID')
+SPOTIPY_CLIENT_SECRET = os.getenv('SPOTIPY_CLIENT_SECRET')
+SPOTIPY_REDIRECT_URI = os.getenv('SPOTIPY_REDIRECT_URI', 'http://127.0.0.1:8888/callback')
+
+# Validate required credentials
+if not SPOTIPY_CLIENT_ID or not SPOTIPY_CLIENT_SECRET:
     raise ValueError(
-        "Missing required environment variable: TRUE_SHUFFLE_PLAYLIST_ID. "
-        "Please set this via environment variable or GitHub Secret."
+        "Missing required environment variables: SPOTIPY_CLIENT_ID and SPOTIPY_CLIENT_SECRET. "
+        "Please set these via environment variables or GitHub Secrets."
     )
+
+
+def get_spotify_client(scope="user-library-read playlist-modify-private"):
+    """
+    Create and return an authenticated Spotify client.
+    
+    Args:
+        scope: OAuth scopes (default: "user-library-read playlist-modify-private")
+    
+    Returns:
+        spotipy.Spotify: Authenticated Spotify client
+    """
+    sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
+        client_id=SPOTIPY_CLIENT_ID,
+        client_secret=SPOTIPY_CLIENT_SECRET,
+        redirect_uri=SPOTIPY_REDIRECT_URI,
+        scope=scope
+    ))
+    
+    return sp
+
+
+def get_track_uris(tracks):
+    """
+    Extract track URIs from a list of track items.
+    
+    Args:
+        tracks: List of track dictionaries from Spotify API
+    
+    Returns:
+        list: List of track URIs
+    """
+    return [item['track']['uri'] for item in tracks]
+
+
+def create_playlist(name, description="", public=True, track_uris=None, sp=None):
+    """
+    Create a new playlist and optionally add tracks to it.
+    
+    Args:
+        name: Name of the playlist
+        description: Description of the playlist (optional)
+        public: Whether the playlist should be public (default: True)
+        track_uris: List of Spotify track URIs to add to the playlist (optional)
+        sp: Authenticated Spotify client (optional, will create one if not provided)
+    
+    Returns:
+        dict: Playlist information from Spotify API
+    """
+    if sp is None:
+        sp = get_spotify_client()
+    
+    # Get current user's ID
+    user_id = sp.current_user()['id']
+    
+    # Create the playlist
+    playlist = sp.user_playlist_create(
+        user=user_id,
+        name=name,
+        public=public,
+        description=description
+    )
+    
+    print(f"\nCreated playlist: {name}")
+    print(f"Playlist ID: {playlist['id']}")
+    print(f"Playlist URL: {playlist['external_urls']['spotify']}")
+    
+    # Add tracks if provided
+    if track_uris:
+        # Spotify API allows adding up to 100 tracks at a time
+        for i in range(0, len(track_uris), 100):
+            batch = track_uris[i:i + 100]
+            sp.playlist_add_items(playlist['id'], batch)
+        
+        print(f"Added {len(track_uris)} tracks to the playlist")
+    
+    return playlist
 
 
 def get_or_create_playlist(sp, playlist_id, playlist_name, description="", public=False):
@@ -106,71 +185,4 @@ def clear_playlist(sp, playlist_id):
         sp.playlist_remove_all_occurrences_of_items(playlist_id, batch)
     
     print(f"Removed {len(track_uris)} tracks from the playlist.")
-
-
-def update_true_shuffle(num_songs=150):
-    """
-    Update the "True Shuffle" playlist with random songs from liked songs.
-    
-    Args:
-        num_songs: Number of random songs to add (default: 150)
-    """
-    print("=" * 80)
-    print("Updating True Shuffle playlist")
-    print("=" * 80)
-    
-    # Get authenticated Spotify client
-    sp = get_spotify_client()
-    
-    # Get or create the "True Shuffle" playlist
-    playlist = get_or_create_playlist(
-        sp,
-        playlist_id=TRUE_SHUFFLE_PLAYLIST_ID,
-        playlist_name="True Shuffle",
-        description="A daily shuffled selection of 150 random songs from your liked songs",
-        public=False
-    )
-    playlist_id = playlist['id']
-    
-    # Clear the playlist
-    print("\nClearing existing tracks from playlist...")
-    clear_playlist(sp, playlist_id)
-    
-    # Get all liked songs (will use cache if available to minimize API calls)
-    print("\nFetching your liked songs...")
-    liked_tracks = get_liked_songs(save_to_disk=True, use_cache=True)
-    print(f"Found {len(liked_tracks)} liked songs.")
-    
-    # Check if we have enough songs
-    if len(liked_tracks) < num_songs:
-        print(f"Warning: You only have {len(liked_tracks)} liked songs, but requested {num_songs}.")
-        print(f"Using all {len(liked_tracks)} songs instead.")
-        num_songs = len(liked_tracks)
-    
-    # Select random songs
-    print(f"\nSelecting {num_songs} random songs...")
-    random_tracks = random.sample(liked_tracks, num_songs)
-    track_uris = get_track_uris(random_tracks)
-    
-    # Add tracks to playlist
-    print(f"\nAdding {len(track_uris)} tracks to the playlist...")
-    # Spotify API allows adding up to 100 tracks at a time
-    for i in range(0, len(track_uris), 100):
-        batch = track_uris[i:i + 100]
-        sp.playlist_add_items(playlist_id, batch)
-        print(f"Added batch {i//100 + 1} ({len(batch)} tracks)")
-    
-    print("\n" + "=" * 80)
-    print("True Shuffle playlist updated successfully!")
-    print(f"Playlist URL: {playlist['external_urls']['spotify']}")
-    print("=" * 80)
-
-
-if __name__ == "__main__":
-    try:
-        update_true_shuffle()
-    except Exception as e:
-        print(f"\nError: {e}")
-        import traceback
-        traceback.print_exc()
 

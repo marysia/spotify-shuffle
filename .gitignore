@@ -1,0 +1,21 @@
+# Environment variables
+.env
+
+# Spotify cache files
+.cache-*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Output files
+liked_songs.txt
+*.csv
+*.json
+

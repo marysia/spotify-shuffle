@@ -41,7 +41,7 @@ The Spotify OAuth flow requires browser-based authentication. Here's how to set 
 
 1. **Run the script locally** to authenticate:
    ```bash
-   python update_true_shuffle.py
+   python src/update_true_shuffle.py
    ```
    This will:
    - Open your browser for Spotify authentication
@@ -207,8 +207,8 @@ You can manually trigger the workflow anytime:
 ## Files Overview
 
 - `.github/workflows/update-playlist.yml` - GitHub Actions workflow definition
-- `update_true_shuffle.py` - Main script that updates the playlist
-- `get_liked_songs.py` - Handles Spotify API and caching
+- `src/update_true_shuffle.py` - Main script that updates the playlist
+- `src/retrieve_liked_songs.py` - Handles Spotify API and caching
 - `.gitignore` - Ensures cache files are never committed
 
 ## Need Help?
