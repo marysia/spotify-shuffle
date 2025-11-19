@@ -39,19 +39,42 @@ The Spotify OAuth flow requires browser-based authentication. Here's how to set 
 
 ### 2.1 Authenticate Locally
 
+**Important**: Before running the script, make sure your Spotify app's redirect URI is set correctly:
+- Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+- Select your app → **Edit Settings**
+- Under **Redirect URIs**, add: `http://127.0.0.1:8888/callback`
+- Click **Add** and **Save**
+- **Do NOT use** external URLs like `https://developer.spotify.com/dashboard` - the OAuth flow requires a local URL that spotipy can listen on
+
 1. **Run the script locally** to authenticate:
    ```bash
    python src/update_true_shuffle.py
    ```
    This will:
-   - Open your browser for Spotify authentication
-   - Create a `.cache-*` file with your OAuth token (contains refresh token)
-   - Create `liked_songs_cache.json` with your liked songs
+   - Open your browser for Spotify authentication (you'll need to log in and authorize the app)
+   - **Automatically create** a `.cache-*` file with your OAuth token (contains refresh token)
+     - The filename will be something like `.cache-yourusername` (created automatically by spotipy)
+   - **Automatically create** `liked_songs_cache.json` with your liked songs
+   
+   **Note**: You don't need to create these files manually - they are generated automatically during the authentication process.
+   
+   **Troubleshooting**: If the `.cache-*` file is not created:
+   - Verify your redirect URI in Spotify dashboard is exactly `http://127.0.0.1:8888/callback`
+   - Make sure port 8888 is not blocked by a firewall
+   - Check that your environment variables are set correctly
+   - Try running the script again after fixing the redirect URI
 
 2. **Verify cache files were created**:
    ```bash
-   ls -la .cache-* liked_songs_cache.json
+   # Universal command (works in all shells):
+   # Note: Cache file might be named .cache or .cache-username
+   find . -maxdepth 1 \( -name ".cache*" -o -name "liked_songs_cache.json" \)
+   
+   # Or for bash/zsh:
+   ls -la .cache* liked_songs_cache.json
    ```
+   
+   **Note**: The cache file might be named `.cache` or `.cache-username` - both are valid. The important thing is that it exists.
 
 ### 2.2 Prepare Cache for GitHub Actions
 
@@ -59,17 +82,26 @@ For the **first GitHub Actions run**, you need to provide the OAuth cache file:
 
 1. **Find your cache file**:
    ```bash
-   ls -la .cache-*
-   # Note the filename (e.g., .cache-username)
+   # Universal command (works in all shells):
+   # Cache file might be named .cache or .cache-username
+   find . -maxdepth 1 -name ".cache*"
+   
+   # Or for bash/zsh:
+   ls -la .cache*
+   
+   # Note the filename (e.g., .cache or .cache-username)
    ```
 
-2. **Encode the cache file** (replace `.cache-username` with your actual filename):
+2. **Encode the cache file** (replace `.cache` or `.cache-username` with your actual filename):
    ```bash
-   # On macOS/Linux:
+   # On macOS/Linux (if your file is named .cache):
+   base64 -i .cache | pbcopy  # Copies to clipboard
+   
+   # Or if it's named .cache-username:
    base64 -i .cache-username | pbcopy  # Copies to clipboard
    
    # Or save to file:
-   base64 -i .cache-username > cache_base64.txt
+   base64 -i .cache > cache_base64.txt  # Use your actual filename
    cat cache_base64.txt  # Review the content
    ```
 
