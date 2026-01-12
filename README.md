@@ -66,4 +66,4 @@ python src/update_true_shuffle.py
 - Your authentication token is cached locally (in `.cache-username`) so you won't need to re-authenticate every time
 - The redirect URI must match exactly what you set in your Spotify app settings
 - **Important**: When creating your Spotify app, select **"Web API"** as the API/SDK you're planning to use
-
+- Need to push a change to the repo once every 60 days for this to keep working.
